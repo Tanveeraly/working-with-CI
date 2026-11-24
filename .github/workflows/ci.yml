@@ -60,6 +60,8 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # full history + tags, to find commits since the previous release
 
       - uses: actions/setup-node@v4
         with:
@@ -75,12 +77,22 @@ jobs:
           name: test-summary
           path: app
 
-      - name: Collect pull requests and reviews for this commit
+      - name: Collect pull requests and reviews since the previous release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
-            --jq '[.[] | {number, title, body, user: .user.login, merged_at, html_url}]' > prs.json || echo '[]' > prs.json
+          # Tag builds cover every commit since the previous v* tag; branch builds cover HEAD only.
+          prev=""
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            prev=$(git describe --tags --abbrev=0 --match 'v*' HEAD^ 2>/dev/null || true)
+          fi
+          if [ -n "$prev" ]; then shas=$(git rev-list "$prev..HEAD"); else shas="$GITHUB_SHA"; fi
+          echo "Previous release: ${prev:-none}"
+          for sha in $shas; do
+            gh api "repos/${{ github.repository }}/commits/$sha/pulls" \
+              --jq '[.[] | select(.merged_at != null) | {number, title, body, user: .user.login, merged_at, html_url}]' || echo '[]'
+          done | jq -s 'add // [] | unique_by(.number)' > prs.json
+          echo "Pull requests: $(jq -r 'map(.number) | join(", ")' prs.json)"
           for n in $(jq -r '.[].number' prs.json); do
             gh api "repos/${{ github.repository }}/pulls/$n/reviews" \
               --jq "[.[] | {pr: $n, reviewer: .user.login, state, submitted_at}]"

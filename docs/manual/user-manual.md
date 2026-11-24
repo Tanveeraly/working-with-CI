@@ -1,13 +1,13 @@
 # Sample Lab App: User Manual
 
-**Manual version:** 0.1.0 (applies to Sample Lab App 0.1.0)
+**Manual version:** 0.2.0 (applies to Sample Lab App 0.2.0)
 
 > Versioned with the app and shipped in every release bundle. Bump the version above together with
 > `app/package.json` so the bundle's manual version matches the release.
 
 ## Glucose conversion
 
-`glucoseMgDlToMmolL(mgdl)` converts mg/dL to mmol/L, rounded to one decimal place. Negative input is rejected.
+`glucoseMgDlToMmolL(mgdl)` converts mg/dL to mmol/L, rounded to one decimal place. Negative or non-numeric input is rejected; the error message includes the received value.
 
 ## Result flagging
 
