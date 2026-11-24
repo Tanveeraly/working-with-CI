@@ -3,7 +3,9 @@
 
 /** Glucose: mg/dL -> mmol/L (factor 18.016). Rounded to one decimal place. */
 export function glucoseMgDlToMmolL(mgdl: number): number {
-  if (!Number.isFinite(mgdl) || mgdl < 0) throw new RangeError('Glucose must be a non-negative number');
+  if (!Number.isFinite(mgdl) || mgdl < 0) {
+    throw new RangeError(`Glucose must be a non-negative number (received: ${mgdl})`);
+  }
   return Math.round((mgdl / 18.016) * 10) / 10;
 }
 
