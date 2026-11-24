@@ -10,6 +10,11 @@ describe('glucoseMgDlToMmolL', () => {
   it('rejects negative input', () => {
     expect(() => glucoseMgDlToMmolL(-1)).toThrow(RangeError);
   });
+
+  it('includes the received value in the error message', () => {
+    expect(() => glucoseMgDlToMmolL(-12)).toThrow('received: -12');
+    expect(() => glucoseMgDlToMmolL(Number.NaN)).toThrow('received: NaN');
+  });
 });
 
 describe('flagResult', () => {
