@@ -1,0 +1,63 @@
+name: Configuration change
+description: Change to settings, templates, mappings, rules, data or access (not a code release)
+labels: ["config-change"]
+body:
+  - type: input
+    id: product
+    attributes:
+      label: Product
+      placeholder: CaseVu LIS
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Report template
+        - Test catalog
+        - Interface / mapping
+        - Rule
+        - Data fix
+        - Access
+        - Other setting
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What changed
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk class
+      description: Report-template changes are ALWAYS High risk. Risk can be raised, never lowered.
+      options:
+        - Low
+        - High
+    validations:
+      required: true
+  - type: input
+    id: tester
+    attributes:
+      label: Tester
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Test-environment evidence
+      description: Results from the test environment only. No patient data.
+  - type: markdown
+    attributes:
+      value: |
+        Once submitted this record is frozen. Corrections must be logged as a new issue.
+        Applying this change in production before director acceptance is recorded as a deviation.

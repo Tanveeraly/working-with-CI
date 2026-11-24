@@ -1,0 +1,114 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Test (writes JSON test summary)
+        run: npm run test:ci
+      - run: npm run build
+
+      - name: Upload test summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-summary-${{ github.run_id }}
+          path: backend/test-results.json
+          if-no-files-found: ignore
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist-${{ github.run_id }}
+          path: backend/dist
+
+  release-bundle:
+    needs: backend
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend-dist-${{ github.run_id }}
+          path: backend/dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: test-summary-${{ github.run_id }}
+          path: backend
+
+      - name: Collect pull requests for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
+            --jq '[.[] | {number, title, body, user: .user.login, merged_at, html_url}]' > prs.json || echo '[]' > prs.json
+          for n in $(jq -r '.[].number' prs.json); do
+            gh api "repos/${{ github.repository }}/pulls/$n/reviews" \
+              --jq "[.[] | {pr: $n, reviewer: .user.login, state, submitted_at}]"
+          done | jq -s 'add // []' > reviews.json
+
+      - name: Build release bundle
+        env:
+          BUILD_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+          COMMIT_SHA: ${{ github.sha }}
+          GIT_REF: ${{ github.ref }}
+          REPOSITORY: ${{ github.repository }}
+        run: node scripts/build-release-bundle.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-bundle-${{ github.run_id }}
+          path: |
+            release-bundle/*.tar.gz
+            release-bundle/manifest.json
+
+      - name: Notify CaseVu
+        env:
+          CASEVU_WEBHOOK_URL: ${{ secrets.CASEVU_WEBHOOK_URL }}
+          CI_WEBHOOK_SECRET: ${{ secrets.CI_WEBHOOK_SECRET }}
+        run: |
+          if [ -z "$CASEVU_WEBHOOK_URL" ] || [ -z "$CI_WEBHOOK_SECRET" ]; then
+            echo "CaseVu webhook secrets not configured; skipping notification."
+            exit 0
+          fi
+          sig=$(openssl dgst -sha256 -hmac "$CI_WEBHOOK_SECRET" -hex < release-bundle/manifest.json | sed 's/^.* //')
+          curl --fail-with-body -sS -X POST "$CASEVU_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-CaseVu-Signature: sha256=$sig" \
+            --data-binary @release-bundle/manifest.json

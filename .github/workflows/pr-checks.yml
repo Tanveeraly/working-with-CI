@@ -1,0 +1,27 @@
+name: pr-checks
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  linked-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: PR must link an issue and declare risk
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if ! printf '%s' "$PR_BODY" | grep -Eiq '(close[sd]?|fix(e[sd])?|resolve[sd]?) +#[0-9]+'; then
+            echo "::error::PR body must link an issue, e.g. 'Closes #12' (readiness gate: Linked issues)."
+            exit 1
+          fi
+          if ! printf '%s' "$PR_BODY" | grep -Eiq '\- \[x\] +(Low|High)'; then
+            echo "::error::Tick exactly one risk class (Low / High) in the PR template."
+            exit 1
+          fi
+          echo "Linked issue and risk class found."

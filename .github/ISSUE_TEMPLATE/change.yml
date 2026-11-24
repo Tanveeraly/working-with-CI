@@ -1,0 +1,42 @@
+name: Code change
+description: A feature or change that will ship in a release bundle
+labels: ["change"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What should change
+      description: Describe the change and the user-visible behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk class
+      description: High = affects laboratory results, reports, interfaces or patient-facing data. Risk can be raised later, never lowered.
+      options:
+        - Low
+        - High
+    validations:
+      required: true
+  - type: dropdown
+    id: docs
+    attributes:
+      label: Documentation impact
+      description: Does the user manual need to change?
+      options:
+        - "Yes - manual update required"
+        - "No - no user-visible change"
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Laboratory verification plan (High risk only)
+      description: Test-environment cases only. Do NOT attach patient data.

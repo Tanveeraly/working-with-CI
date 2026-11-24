@@ -1,0 +1,7 @@
+# Every change needs a second-engineer review (readiness gate: "Reviewed pull requests").
+# Add more engineers/teams here as they join, e.g. "* @Tanveeraly @other-engineer".
+*                         @Tanveeraly
+
+# Gate and approval rules are safety-critical.
+/backend/src/domain/      @Tanveeraly
+/.github/                 @Tanveeraly

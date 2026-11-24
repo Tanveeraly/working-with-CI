@@ -1,0 +1,40 @@
+name: Bug report
+description: Something is not working as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Do NOT include patient data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / build
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk class
+      options:
+        - Low
+        - High
+    validations:
+      required: true
+  - type: dropdown
+    id: emergency
+    attributes:
+      label: Is patient care affected right now?
+      description: If yes, the release manager may start the emergency authorization workflow.
+      options:
+        - "No"
+        - "Yes"
+    validations:
+      required: true
