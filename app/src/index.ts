@@ -9,6 +9,18 @@ export function glucoseMgDlToMmolL(mgdl: number): number {
   return Math.round((mgdl / 18.016) * 10) / 10;
 }
 
+/**
+ * HbA1c: NGSP/DCCT % -> IFCC mmol/mol, using the IFCC master equation
+ * mmol/mol = (% - 2.15) x 10.929, rounded to the nearest whole number.
+ * Accepts 3-20 %, the range the master equation is validated for in this app.
+ */
+export function hba1cPercentToMmolMol(percent: number): number {
+  if (!Number.isFinite(percent) || percent < 3 || percent > 20) {
+    throw new RangeError(`HbA1c must be between 3 and 20 % (received: ${percent})`);
+  }
+  return Math.round((percent - 2.15) * 10.929);
+}
+
 export interface ReferenceRange {
   low: number;
   high: number;

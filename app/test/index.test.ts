@@ -1,5 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { flagResult, formatResult, glucoseMgDlToMmolL } from '../src/index.js';
+import { flagResult, formatResult, glucoseMgDlToMmolL, hba1cPercentToMmolMol } from '../src/index.js';
+
+describe('hba1cPercentToMmolMol', () => {
+  it.each([
+    [5.0, 31],
+    [5.7, 39],
+    [6.5, 48],
+    [7.0, 53],
+    [10.0, 86],
+  ])('converts %s %% to %s mmol/mol', (percent, mmolMol) => {
+    expect(hba1cPercentToMmolMol(percent)).toBe(mmolMol);
+  });
+
+  it.each([2.9, 20.1, Number.NaN, Number.POSITIVE_INFINITY])('rejects %s', (percent) => {
+    expect(() => hba1cPercentToMmolMol(percent)).toThrow(RangeError);
+  });
+});
 
 describe('glucoseMgDlToMmolL', () => {
   it('converts mg/dL to mmol/L', () => {
