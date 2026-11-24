@@ -100,9 +100,14 @@ const issues = [
 ];
 
 for (const [name, color, description] of labels) {
-  const { status } = await api('POST', '/labels', { name, color, description });
-  if (status === 422) await api('PATCH', `/labels/${encodeURIComponent(name)}`, { color, description });
-  console.log(`label  ${name}`);
+  try {
+    const { status } = await api('POST', '/labels', { name, color, description });
+    if (status === 422) await api('PATCH', `/labels/${encodeURIComponent(name)}`, { color, description });
+    console.log(`label  ${name}`);
+  } catch (err) {
+    // Labels are auto-created (without colors) when an issue uses them, so this is not fatal.
+    console.warn(`warn   could not create label ${name}: ${err.message.split(' {')[0]}`);
+  }
 }
 
 const existing = new Set();

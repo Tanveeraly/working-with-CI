@@ -13,13 +13,13 @@ GITHUB_TOKEN=<token> node scripts/seed-github.mjs
 ## 2. A normal reviewed change → PR data
 
 ```bash
-git checkout -b feature/3-error-message
+git checkout -b feature/4-error-message
 # edit app/src/index.ts, add a test
 git commit -am "Include value in glucose RangeError"
-git push -u origin feature/3-error-message
+git push -u origin feature/4-error-message
 ```
 
-Open a PR with `Closes #3` in the body and tick a risk class. To get a **second-engineer review**,
+Open a PR with `Closes #4` in the body and tick a risk class. To get a **second-engineer review**,
 approve it from a second GitHub account (you can't approve your own PR). Then merge it.
 
 ## 3. A release bundle → release/version data
