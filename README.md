@@ -1,67 +1,36 @@
-# CaseVu — Release & Change Control
+# working-with-CI: test data source for CaseVu
 
-CaseVu tracks how a release or configuration change moves through **intake → risk assessment → review →
-deployment → version history → staff acknowledgement → audit export**.
+This is a **test repository**, not the CaseVu project itself. It contains a tiny sample app
+(`app/`, lab-value utilities) plus a CI pipeline. Together they produce realistic GitHub data for the
+CaseVu project to fetch and process:
 
-This repository is set up so that its own CI produces the **release bundle** CaseVu consumes
-(build ID, version, SHA-256, linked issues, PRs, test summary and user manual).
+- **Issues** with risk class and documentation impact (issue forms + labels)
+- **Pull requests** that link issues (`Closes #n`) and have reviews
+- **CI runs** with test summaries
+- **Release bundles** on every `v*` tag: build ID, version, SHA-256, linked issues, PRs + reviewers,
+  test summary and the versioned user manual, published as a GitHub Release (`.tar.gz` + `manifest.json`)
+- **Optional webhook** that pushes `manifest.json` to a CaseVu endpoint with an HMAC signature
 
-## Repository layout
+## Docs
+
+- [docs/fetching-data.md](docs/fetching-data.md): which GitHub API endpoints CaseVu should call for each field
+- [docs/generating-test-data.md](docs/generating-test-data.md): how to create issues, PRs, releases and edge cases
+- [docs/development.md](docs/development.md): branch/PR flow and one-time GitHub settings
+
+## Layout
 
 ```
-.github/
-  ISSUE_TEMPLATE/        Change / config-change / bug templates (risk class + documentation impact)
-  workflows/ci.yml       Lint, typecheck, test, build release bundle, notify CaseVu webhook
-  workflows/pr-checks.yml  PR must link an issue and declare risk
-  pull_request_template.md
-  CODEOWNERS             Enforces second-engineer review
-backend/                 Node.js + TypeScript API (Express, Vitest)
-  src/domain/            Core rules: risk, readiness, deployment gate, emergency authorization
-  test/                  Essential test scenarios from the guide (section 13)
-docs/
-  workflow.md            Roles, workflows and rules (summary of the developer guide)
-  development.md         Branching, PR and release process
-  roadmap.md             8-phase implementation plan
-  manual/user-manual.md  Versioned user manual shipped in every release bundle
-scripts/
-  build-release-bundle.mjs  Assembles the CI bundle + manifest with SHA-256
-docker-compose.yml       Postgres + API for local development
+.github/ISSUE_TEMPLATE/     change, config-change, bug forms
+.github/workflows/ci.yml    test → build bundle → GitHub Release (tags) → optional webhook
+.github/workflows/pr-checks.yml  PR must link an issue and tick a risk class
+app/                        sample TypeScript app + Vitest tests
+docs/manual/user-manual.md  versioned manual shipped in each bundle
+scripts/build-release-bundle.mjs  builds the bundle + manifest.json
+scripts/seed-github.mjs     creates labels and sample issues via the GitHub API
 ```
 
-## Quick start
+## Local
 
 ```bash
-cd backend
-npm install
-npm test          # run domain tests
-npm run dev       # start API on http://localhost:3000 (GET /health)
+cd app && npm install && npm test
 ```
-
-Or with Docker:
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-## CI release bundle
-
-On every push to `main` (and on `v*` tags) the CI workflow:
-
-1. Lints, typechecks and tests the backend (JUnit/JSON test summary).
-2. Collects the PRs associated with the commit and the issues they close.
-3. Builds `release-bundle/` containing the build, the test summary and the versioned manual,
-   archives it and records its **SHA-256** in `manifest.json`.
-4. Uploads the bundle as a workflow artifact.
-5. If the `CASEVU_WEBHOOK_URL` and `CI_WEBHOOK_SECRET` secrets are set, POSTs the manifest to
-   `POST /releases/webhook` with an `X-CaseVu-Signature` HMAC header.
-
-See [docs/development.md](docs/development.md) for the branch protection settings to enable on GitHub.
-
-## Key engineering safeguards
-
-- **Append-only history** — submitted releases, approvals and audit records are never edited; corrections are new records.
-- **Server-side authorization and readiness** — never trust readiness values from the browser.
-- **Build-specific approvals** — bound to release ID + build ID + bundle hash.
-- **Transactional deployment gate** — readiness re-checked immediately before deploy.
-- **Export completeness** — audit gaps are listed, never hidden.

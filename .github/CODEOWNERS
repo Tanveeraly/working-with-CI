@@ -1,7 +1,3 @@
-# Every change needs a second-engineer review (readiness gate: "Reviewed pull requests").
-# Add more engineers/teams here as they join, e.g. "* @Tanveeraly @other-engineer".
-*                         @Tanveeraly
-
-# Gate and approval rules are safety-critical.
-/backend/src/domain/      @Tanveeraly
-/.github/                 @Tanveeraly
+# Requests a review on every PR so the generated data includes reviewers.
+# Add a second account to produce "second-engineer reviewed" PRs, e.g. "* @Tanveeraly @other-account".
+* @Tanveeraly

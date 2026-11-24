@@ -1,38 +1,19 @@
-# CaseVu User Manual
+# Sample Lab App: User Manual
 
-**Manual version:** 0.1.0 (applies to CaseVu 0.1.0)
+**Manual version:** 0.1.0 (applies to Sample Lab App 0.1.0)
 
-> This manual is versioned with the application and included in every CI release bundle.
-> Update it in the same pull request as any user-visible change.
+> Versioned with the app and shipped in every release bundle. Bump the version above together with
+> `app/package.json` so the bundle's manual version matches the release.
 
-## 1. Signing in
+## Glucose conversion
 
-_To be written in Phase 1 (authentication and roles)._
+`glucoseMgDlToMmolL(mgdl)` converts mg/dL to mmol/L, rounded to one decimal place. Negative input is rejected.
 
-## 2. Change register (release manager)
+## Result flagging
 
-_To be written in Phase 2._
+`flagResult(value, range)` returns `CRITICAL_LOW`, `LOW`, `NORMAL`, `HIGH` or `CRITICAL_HIGH`.
+Critical limits are inclusive.
 
-## 3. Review queue (laboratory director / designee)
+## Report lines
 
-_To be written in Phase 3._
-
-## 4. Version history
-
-_To be written in Phase 4._
-
-## 5. Configuration changes
-
-_To be written in Phase 5._
-
-## 6. Release notes and acknowledgement (staff)
-
-_To be written in Phase 7._
-
-## 7. Audit export (auditor)
-
-_To be written in Phase 7._
-
-## 8. Emergency authorization
-
-_To be written in Phase 8._
+`formatResult(test, value, unit, flag)` returns e.g. `Glucose: 5.4 mmol/L (NORMAL)`.

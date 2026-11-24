@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Assembles the CaseVu CI release bundle:
+// Assembles the CI release bundle that the CaseVu project consumes:
 //   build ID, version, SHA-256, linked issues, PRs (+ reviews), test summary and user manual.
-// Inputs (produced by earlier CI steps): backend/dist, backend/test-results.json, prs.json, reviews.json
+// Inputs (produced by earlier CI steps): app/dist, app/test-results.json, prs.json, reviews.json
 // Output: release-bundle/<name>.tar.gz and release-bundle/manifest.json
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -14,13 +14,13 @@ const stage = join(outDir, 'contents');
 
 const readJson = (p, fallback) => (existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : fallback);
 
-const pkg = readJson(join(root, 'backend/package.json'), {});
+const pkg = readJson(join(root, 'app/package.json'), {});
 const version = pkg.version ?? '0.0.0';
 const buildId = process.env.BUILD_ID ?? `local-${Date.now()}`;
 const commitSha = process.env.COMMIT_SHA ?? execFileSync('git', ['rev-parse', 'HEAD']).toString().trim();
 
 // --- Test summary (Vitest JSON reporter) ---
-const results = readJson(join(root, 'backend/test-results.json'), null);
+const results = readJson(join(root, 'app/test-results.json'), null);
 const testSummary = results
   ? {
       buildId,
@@ -59,12 +59,12 @@ const linkedIssues = [
 // --- Stage contents ---
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(stage, { recursive: true });
-cpSync(join(root, 'backend/dist'), join(stage, 'dist'), { recursive: true });
+cpSync(join(root, 'app/dist'), join(stage, 'dist'), { recursive: true });
 cpSync(join(root, 'docs/manual'), join(stage, 'manual'), { recursive: true });
 writeFileSync(join(stage, 'test-summary.json'), JSON.stringify(testSummary, null, 2));
 
 // --- Archive + hash ---
-const archiveName = `casevu-${version}-${buildId}.tar.gz`;
+const archiveName = `sample-lab-app-${version}-${buildId}.tar.gz`;
 const archivePath = join(outDir, archiveName);
 // Relative paths: GNU tar on Windows treats "D:\..." as a remote host.
 execFileSync('tar', ['-czf', archiveName, '-C', 'contents', '.'], { cwd: outDir });
@@ -72,7 +72,7 @@ const sha256 = createHash('sha256').update(readFileSync(archivePath)).digest('he
 
 const manifest = {
   schema: 'casevu.release-bundle/v1',
-  product: 'CaseVu',
+  product: 'Sample Lab App',
   version,
   buildId,
   commitSha,

@@ -16,11 +16,11 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  backend:
+  test:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
+        working-directory: app
     steps:
       - uses: actions/checkout@v4
 
@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: app/package-lock.json
 
       - run: npm ci
       - run: npm run lint
@@ -41,20 +41,23 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-summary-${{ github.run_id }}
-          path: backend/test-results.json
+          name: test-summary
+          path: app/test-results.json
           if-no-files-found: ignore
 
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:
-          name: backend-dist-${{ github.run_id }}
-          path: backend/dist
+          name: app-dist
+          path: app/dist
 
   release-bundle:
-    needs: backend
+    needs: test
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write        # needed to create GitHub Releases on tags
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
 
@@ -64,15 +67,15 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: backend-dist-${{ github.run_id }}
-          path: backend/dist
+          name: app-dist
+          path: app/dist
 
       - uses: actions/download-artifact@v4
         with:
-          name: test-summary-${{ github.run_id }}
-          path: backend
+          name: test-summary
+          path: app
 
-      - name: Collect pull requests for this commit
+      - name: Collect pull requests and reviews for this commit
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -91,20 +94,32 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: node scripts/build-release-bundle.mjs
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload bundle as workflow artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: release-bundle-${{ github.run_id }}
+          name: release-bundle
           path: |
             release-bundle/*.tar.gz
             release-bundle/manifest.json
 
-      - name: Notify CaseVu
+      - name: Publish GitHub Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            release-bundle/*.tar.gz release-bundle/manifest.json \
+            --repo "${{ github.repository }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes
+
+      - name: Notify webhook (optional)
         env:
           CASEVU_WEBHOOK_URL: ${{ secrets.CASEVU_WEBHOOK_URL }}
           CI_WEBHOOK_SECRET: ${{ secrets.CI_WEBHOOK_SECRET }}
         run: |
           if [ -z "$CASEVU_WEBHOOK_URL" ] || [ -z "$CI_WEBHOOK_SECRET" ]; then
-            echo "CaseVu webhook secrets not configured; skipping notification."
+            echo "Webhook secrets not configured; skipping."
             exit 0
           fi
           sig=$(openssl dgst -sha256 -hmac "$CI_WEBHOOK_SECRET" -hex < release-bundle/manifest.json | sed 's/^.* //')
